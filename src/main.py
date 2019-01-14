@@ -3,7 +3,7 @@ Reference implementation of node2vec.
 
 Author: Aditya Grover
 
-For more details, refer to the paper:
+For more dils, refer to the paper:
 node2vec: Scalable Feature Learning for Networks
 Aditya Grover and Jure Leskovec
 Knowledge Discovery and Data Mining (KDD), 2016
@@ -182,8 +182,8 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     centers, radii = initialize_params(cur_embeds, nodes, neighbors, edge_map, args.dimensions)
 
     # Hyper-parameters
-    beta = 0.01
-    eta = 0.001
+    beta = 0.1
+    eta = 0.1
     print('Initial value of hyper-parameters :: beta = %s eta = %s' %(beta, eta))
 
     # Start updating optimization variables using projection and collective homophily
@@ -197,7 +197,9 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         print('Penalty error after iteration %s' %(i+1), penalty_error)
         model.train(walks, total_examples=model.corpus_count)
         beta *= 2
-        print('Hyper-parameter beta after iteration %s' % (i + 1), beta)
+        if (i+1)%2 == 0:
+            eta /= 2
+        print('After iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
 
     # Final projection and updation of centers and radii before saving the embeddings
     embeddings = model.syn0
