@@ -159,10 +159,10 @@ def initialize_params(embeddings, nodes, neighbors, edge_map, vector_size):
     return centers, radius
 
 
-def update_optimization_params(embeddings, centers, radii, edge_map, nodes):
-    projected_embeddings = update_embeddings(embeddings, centers, radii, edge_map, nodes)
-    centers, radii = update_sphere(projected_embeddings, centers, radii, edge_map, nodes)
-    print("Center shape :: ", centers.shape)
+def update_optimization_params(embeddings, centers, radii, edge_map, nodes, beta=0.01, eta=0.001):
+    projected_embeddings = update_embeddings(embeddings, centers, radii, edge_map, nodes, beta=beta, eta=eta)
+    centers, radii = update_sphere(projected_embeddings, centers, radii, edge_map, nodes, beta=beta, eta=eta)
+    # print("Center shape :: ", centers.shape)
     return projected_embeddings, centers, radii
 
 
@@ -181,16 +181,23 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     cur_embeds = model.syn0
     centers, radii = initialize_params(cur_embeds, nodes, neighbors, edge_map, args.dimensions)
 
+    # Hyper-parameters
+    beta = 0.01
+    eta = 0.001
+    print('Initial value of hyper-parameters :: beta = %s eta = %s' %(beta, eta))
+
     # Start updating optimization variables using projection and collective homophily
     for i in range(args.l2v_iter):
         embeddings = model.syn0
         projected_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
-                                                                          nodes)
+                                                                          nodes, beta=beta, eta=eta)
         model.syn0 = projected_embeddings
         # print('Updated embeds after iteration %s' % (i+1), model.syn0)
         penalty_error = measure_penalty_error(projected_embeddings, centers, radii, reverse_edge_map, nodes)
-        print('Penalty error adter iteration %s' %(i+1), penalty_error)
+        print('Penalty error after iteration %s' %(i+1), penalty_error)
         model.train(walks, total_examples=model.corpus_count)
+        beta *= 2
+        print('Hyper-parameter beta after iteration %s' % (i + 1), beta)
 
     # Final projection and updation of centers and radii before saving the embeddings
     embeddings = model.syn0
