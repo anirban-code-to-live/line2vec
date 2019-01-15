@@ -3,12 +3,13 @@ Reference implementation of node2vec.
 
 Author: Aditya Grover
 
-For more details, refer to the paper:
+For more dils, refer to the paper:
 node2vec: Scalable Feature Learning for Networks
 Aditya Grover and Jure Leskovec
 Knowledge Discovery and Data Mining (KDD), 2016
 '''
 
+import matplotlib
 import argparse
 import os
 import pickle
@@ -21,6 +22,7 @@ from numpy import random
 from optimization import update_embeddings
 from optimization import update_sphere
 from error import measure_penalty_error
+import matplotlib.pyplot as plt
 
 
 def parse_args():
@@ -31,6 +33,9 @@ def parse_args():
 
     parser.add_argument('--input', nargs='?', default='graph/karate.edgelist',
                         help='Input graph path')
+    
+    parser.add_argument('--dataset', nargs='?', default='karate',
+                        help='Input graph name for saving files')
 
     parser.add_argument('--output', nargs='?', default='emb/karate.emb',
                         help='Embeddings path')
@@ -180,10 +185,13 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     # Initialize params after first iteration of word2vec
     cur_embeds = model.syn0
     centers, radii = initialize_params(cur_embeds, nodes, neighbors, edge_map, args.dimensions)
+    
+    #List containing penalty errors over iterations
+    penalty_error_list = []
 
     # Hyper-parameters
-    beta = 0.01
-    eta = 0.001
+    beta = 0.1
+    eta = 0.1
     print('Initial value of hyper-parameters :: beta = %s eta = %s' %(beta, eta))
 
     # Start updating optimization variables using projection and collective homophily
@@ -192,12 +200,15 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         penalty_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
                                                                           nodes, beta=beta, eta=eta)
         model.syn0 = penalty_embeddings
-        # print('Updated embeds after iteration %s' % (i+1), model.syn0)
         penalty_error = measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes)
+        penalty_error_list.append(penalty_error)
+        print('At iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
         print('Penalty error after iteration %s' %(i+1), penalty_error)
         model.train(walks, total_examples=model.corpus_count)
-        beta *= 2
-        print('Hyper-parameter beta after iteration %s' % (i + 1), beta)
+        if penalty_error > 1:
+            beta *= 2
+        if i>4 and (i+1)% 2 == 0:
+            eta /= 2
 
     # Final projection and updation of centers and radii before saving the embeddings
     embeddings = model.syn0
@@ -206,7 +217,8 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     model.syn0 = penalty_embeddings
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
-    return
+    
+    return penalty_error_list
 
 
 def modify_edge_weights(G, epsilon=0.00001):
@@ -396,7 +408,14 @@ def main(args):
         neighbors[node] = neigh_n
 
     # Learn embeddings
-    learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
+    penalty_error_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
+    
+    plt.plot(range(1,len(penalty_error_list)+1), penalty_error_list)
+    plt.ylabel('Constraint Penalty Error')
+    plt.xlabel('Iterations')
+    savePath = '../embed/{}/{}_PenError.jpg'.format(args.dataset,args.dataset)
+    plt.savefig(savePath)
+    plt.show()
 
 
 if __name__ == "__main__":
