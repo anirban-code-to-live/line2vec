@@ -9,6 +9,7 @@ Aditya Grover and Jure Leskovec
 Knowledge Discovery and Data Mining (KDD), 2016
 '''
 
+import matplotlib
 import argparse
 import os
 import pickle
@@ -21,6 +22,7 @@ from numpy import random
 from optimization import update_embeddings
 from optimization import update_sphere
 from error import measure_penalty_error
+import matplotlib.pyplot as plt
 
 
 def parse_args():
@@ -180,6 +182,9 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     # Initialize params after first iteration of word2vec
     cur_embeds = model.syn0
     centers, radii = initialize_params(cur_embeds, nodes, neighbors, edge_map, args.dimensions)
+    
+    #List containing penalty errors over iterations
+    penalty_error_list = []
 
     # Hyper-parameters
     beta = 0.1
@@ -193,11 +198,13 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
                                                                           nodes, beta=beta, eta=eta)
         model.syn0 = projected_embeddings
         # print('Updated embeds after iteration %s' % (i+1), model.syn0)
+        #print radii
         penalty_error = measure_penalty_error(projected_embeddings, centers, radii, reverse_edge_map, nodes)
+        penalty_error_list.append(penalty_error)
         print('Penalty error after iteration %s' %(i+1), penalty_error)
         model.train(walks, total_examples=model.corpus_count)
         beta *= 2
-        if (i+1)%2 == 0:
+        if (i+1)% 2 == 0:
             eta /= 2
         print('After iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
 
@@ -208,7 +215,8 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     model.syn0 = projected_embeddings
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
-    return
+    
+    return penalty_error_list
 
 
 def modify_edge_weights(G, epsilon=0.00001):
@@ -398,7 +406,12 @@ def main(args):
         neighbors[node] = neigh_n
 
     # Learn embeddings
-    learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
+    penalty_error_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
+    
+    plt.plot(range(1,len(penalty_error_list)+1), penalty_error_list)
+    plt.ylabel('Constraint Penalty Error')
+    plt.xlabel('Iterations')
+    plt.show()
 
 
 if __name__ == "__main__":
