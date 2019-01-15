@@ -207,8 +207,9 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         print('At iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
         print('Penalty error after iteration %s' %(i+1), penalty_error)
         model.train(walks, total_examples=model.corpus_count)
-        beta *= 2
-        if (i+1)% 2 == 0:
+        if penalty_error > 1:
+            beta *= 2
+        if i>4 and (i+1)% 2 == 0:
             eta /= 2
 
     # Final projection and updation of centers and radii before saving the embeddings
