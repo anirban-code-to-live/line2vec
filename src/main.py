@@ -33,6 +33,9 @@ def parse_args():
 
     parser.add_argument('--input', nargs='?', default='graph/karate.edgelist',
                         help='Input graph path')
+    
+    parser.add_argument('--dataset', nargs='?', default='karate',
+                        help='Input graph name for saving files')
 
     parser.add_argument('--output', nargs='?', default='emb/karate.emb',
                         help='Embeddings path')
@@ -201,12 +204,12 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         #print radii
         penalty_error = measure_penalty_error(projected_embeddings, centers, radii, reverse_edge_map, nodes)
         penalty_error_list.append(penalty_error)
+        print('At iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
         print('Penalty error after iteration %s' %(i+1), penalty_error)
         model.train(walks, total_examples=model.corpus_count)
         beta *= 2
         if (i+1)% 2 == 0:
             eta /= 2
-        print('After iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
 
     # Final projection and updation of centers and radii before saving the embeddings
     embeddings = model.syn0
@@ -411,6 +414,8 @@ def main(args):
     plt.plot(range(1,len(penalty_error_list)+1), penalty_error_list)
     plt.ylabel('Constraint Penalty Error')
     plt.xlabel('Iterations')
+    savePath = '../embed/{}/{}_PenError.jpg'.format(args.dataset,args.dataset)
+    plt.savefig(savePath)
     plt.show()
 
 
