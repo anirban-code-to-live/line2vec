@@ -160,10 +160,10 @@ def initialize_params(embeddings, nodes, neighbors, edge_map, vector_size):
 
 
 def update_optimization_params(embeddings, centers, radii, edge_map, nodes, beta=0.01, eta=0.001):
-    projected_embeddings = update_embeddings(embeddings, centers, radii, edge_map, nodes, beta=beta, eta=eta)
-    centers, radii = update_sphere(projected_embeddings, centers, radii, edge_map, nodes, beta=beta, eta=eta)
+    penalty_embeddings = update_embeddings(embeddings, centers, radii, edge_map, nodes, beta=beta, eta=eta)
+    centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, beta=beta, eta=eta)
     # print("Center shape :: ", centers.shape)
-    return projected_embeddings, centers, radii
+    return penalty_embeddings, centers, radii
 
 
 def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
@@ -189,11 +189,11 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     # Start updating optimization variables using projection and collective homophily
     for i in range(args.l2v_iter):
         embeddings = model.syn0
-        projected_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
+        penalty_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
                                                                           nodes, beta=beta, eta=eta)
-        model.syn0 = projected_embeddings
+        model.syn0 = penalty_embeddings
         # print('Updated embeds after iteration %s' % (i+1), model.syn0)
-        penalty_error = measure_penalty_error(projected_embeddings, centers, radii, reverse_edge_map, nodes)
+        penalty_error = measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes)
         print('Penalty error after iteration %s' %(i+1), penalty_error)
         model.train(walks, total_examples=model.corpus_count)
         beta *= 2
@@ -201,9 +201,9 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # Final projection and updation of centers and radii before saving the embeddings
     embeddings = model.syn0
-    projected_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
+    penalty_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
                                                                       nodes)
-    model.syn0 = projected_embeddings
+    model.syn0 = penalty_embeddings
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
     return
