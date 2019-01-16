@@ -1,11 +1,11 @@
 import numpy as np
 
 
-def measure_penalty_error(embeddings, centers, radii, edge_map, nodes):
+def measure_penalty_error(embeddings, centers, radii, edge_map, nodes, edges):
     edge_count = embeddings.shape[0]
     error = 0.0
     for i in range(edge_count):
-        edge = edge_map[i]
+        edge = edge_map[edges[i]]
         n_u = edge[0]
         n_v = edge[1]
         n_u_ind = np.where(nodes == n_u)

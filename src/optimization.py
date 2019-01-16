@@ -2,12 +2,12 @@ from scipy.optimize import minimize
 import numpy as np
 
 
-def update_embeddings(embeddings, centers, radii, edge_map, nodes, beta=0.001, eta=0.1):
+def update_embeddings(embeddings, centers, radii, edge_map, nodes, edges, beta=0.001, eta=0.1):
     edge_count = embeddings.shape[0]
     embed_dim = embeddings.shape[1]
     assert edge_count == len(edge_map.keys())
     for i in range(edge_count):
-        edge = edge_map[i]
+        edge = edge_map[edges[i]]
         n_u = edge[0]
         n_v = edge[1]
         X_uv = embeddings[i]
@@ -27,7 +27,7 @@ def update_embeddings(embeddings, centers, radii, edge_map, nodes, beta=0.001, e
     return embeddings
 
 
-def update_sphere(embeddings, centers, radii, edge_map, nodes, alpha=0.3, beta=0.1, eta=0.1):
+def update_sphere(embeddings, centers, radii, edge_map, nodes, edges, alpha=0.3, beta=0.1, eta=0.1):
     # Update radius and centers using gradients
     node_count = len(nodes)
     edge_count = embeddings.shape[0]
@@ -35,7 +35,7 @@ def update_sphere(embeddings, centers, radii, edge_map, nodes, alpha=0.3, beta=0
     dradii = np.zeros((node_count, 1))
     dcenters = np.zeros((node_count, embed_dim))
     for i in range(edge_count):
-        edge = edge_map[i]
+        edge = edge_map[edges[i]]
         n_u = edge[0]
         n_v = edge[1]
         n_u_ind = np.where(nodes == n_u)
