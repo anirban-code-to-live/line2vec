@@ -2,15 +2,17 @@ from scipy.optimize import minimize
 import numpy as np
 
 
-def update_embeddings(embeddings, centers, radii, edge_map, nodes, edges, beta=0.001, eta=0.1):
-    edge_count = embeddings.shape[0]
-    embed_dim = embeddings.shape[1]
+def update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=0.001, eta=0.1):
+    edge_count = old_embeddings.shape[0]
+    embed_dim = old_embeddings.shape[1]
     assert edge_count == len(edge_map.keys())
+    assert old_embeddings.shape[0] == new_embeddings.shape[0]
+    assert old_embeddings.shape[1] == new_embeddings.shape[1]
     for i in range(edge_count):
         edge = edge_map[edges[i]]
         n_u = edge[0]
         n_v = edge[1]
-        X_uv = embeddings[i]
+        X_uv = old_embeddings[i]
         n_u_ind = np.where(nodes == n_u)
         n_v_ind = np.where(nodes == n_v)
         c_u = centers[n_u_ind]
@@ -22,9 +24,9 @@ def update_embeddings(embeddings, centers, radii, edge_map, nodes, edges, beta=0
             dX_uv += 2 * beta * (X_uv - c_u)
         if np.linalg.norm(X_uv - c_v) > r_v:
             dX_uv += 2 * beta * (X_uv - c_v)
-        embeddings[i] = X_uv - eta * dX_uv
+        new_embeddings[i] = new_embeddings[i] - eta * dX_uv
 
-    return embeddings
+    return new_embeddings
 
 
 def update_sphere(embeddings, centers, radii, edge_map, nodes, edges, alpha=0.3, beta=0.1, eta=0.1):
