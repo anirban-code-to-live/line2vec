@@ -22,6 +22,7 @@ from numpy import random
 from optimization import update_embeddings
 from optimization import update_sphere
 from error import measure_penalty_error
+from error import measure_radial_error
 # import matplotlib.pyplot as plt
 
 
@@ -164,8 +165,8 @@ def initialize_params(embeddings, nodes, neighbors, edge_map, vector_size):
     return centers, radius
 
 
-def update_optimization_params(embeddings, centers, radii, edge_map, nodes, edges, beta=0.01, eta=0.001):
-    penalty_embeddings = update_embeddings(embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
+def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=0.01, eta=0.001):
+    penalty_embeddings = update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
     centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
     # print("Center shape :: ", centers.shape)
     return penalty_embeddings, centers, radii
@@ -186,13 +187,11 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     cur_embeds = model.syn0
     centers, radii = initialize_params(cur_embeds, nodes, neighbors, edge_map, args.dimensions)
 
-
+    # List containing edge ids, embeddings of edges are stored in this order
     edges = [int(word) for word in model.index2word]
-    print('Model index2word :: ', model.index2word)
+    # print('Model index2word :: ', model.index2word)
 
-    print('Reverse edge map :: ', reverse_edge_map)
-
-    #List containing penalty errors over iterations
+    # List containing penalty errors over iterations
     penalty_error_list = []
 
     # Hyper-parameters
@@ -202,25 +201,24 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # Start updating optimization variables using projection and collective homophily
     for i in range(args.l2v_iter):
-        embeddings = model.syn0
-        penalty_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
+        old_embeddings = model.syn0
+        model.train(walks, total_examples=model.corpus_count)
+        new_embeddings = model.syn0
+        penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map,
                                                                           nodes, edges, beta=beta, eta=eta)
         model.syn0 = penalty_embeddings
         penalty_error = measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
         penalty_error_list.append(penalty_error)
         print('At iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
         print('Penalty error after iteration %s' %(i+1), penalty_error)
-        model.train(walks, total_examples=model.corpus_count)
+        radial_error = measure_radial_error(radii)
+        print('Radial error after iteration %s :: %s' %(i+1, radial_error))
+        # print('Word2Vec cost after iteration %s is :: %s' %(i+1, -model.w2v_cost))
         if penalty_error > 1:
             beta *= 2
         if i>4 and (i+1)% 2 == 0:
             eta /= 2
 
-    # Final projection and updation of centers and radii before saving the embeddings
-    embeddings = model.syn0
-    penalty_embeddings, centers, radii = update_optimization_params(embeddings, centers, radii, reverse_edge_map,
-                                                                      nodes, edges)
-    model.syn0 = penalty_embeddings
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
     
