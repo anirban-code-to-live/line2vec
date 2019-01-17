@@ -24,3 +24,12 @@ def measure_penalty_error(embeddings, centers, radii, edge_map, nodes, edges):
             error += np.linalg.norm(X_uv - c_v) ** 2 - r_v ** 2
 
     return error
+
+
+def measure_radial_error(radii):
+    error = 0.
+    node_count = radii.shape[0]
+    for i in range(node_count):
+        radius = radii[i][0]
+        error += radius**2
+    return error
