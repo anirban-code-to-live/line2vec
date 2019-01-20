@@ -197,6 +197,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     # Hyper-parameters
     beta = 0.1
     eta = 0.1
+    alpha = 0.3
     print('Initial value of hyper-parameters :: beta = %s eta = %s' %(beta, eta))
 
     # Start updating optimization variables using projection and collective homophily
@@ -214,6 +215,8 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         radial_error = measure_radial_error(radii)
         print('Radial error after iteration %s :: %s' %(i+1, radial_error))
         # print('Word2Vec cost after iteration %s is :: %s' %(i+1, -model.w2v_cost))
+        # total_cost = beta*penalty_error + alpha*radial_error - model.w2v_cost
+        # print('Total cost after iteration %s is %s' %(i+1, total_cost))
         if penalty_error > 1:
             beta *= 2
         if i>4 and (i+1)% 2 == 0:
