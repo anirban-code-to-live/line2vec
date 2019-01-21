@@ -130,7 +130,6 @@ def seeded_vector(seed_string, vector_size):
 
 
 def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size):
-    print(edges)
     node_count = len(nodes)
     centers = np.empty((node_count, vector_size), dtype=float)
     for i in range(node_count):
