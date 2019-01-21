@@ -135,6 +135,7 @@ def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size
     for i in range(node_count):
         n_i = nodes[i]
         neigh_i = neighbors[n_i]
+        neigh_i_count = 0
         center_i = np.zeros((1, vector_size))
         for ind in range(len(neigh_i)):
             key = (n_i, neigh_i[ind])
@@ -142,10 +143,13 @@ def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size
                 edge_index = edge_map[(n_i, neigh_i[ind])]
             else:
                 edge_index = edge_map[(neigh_i[ind], n_i)]
-            embed_index = np.where(np.array(edges) == edge_index)[0][0]
-            center_i += embeddings[embed_index]
-        center_i = center_i / len(neigh_i)
-        centers[i] = center_i
+            if edge_index in edges:
+                embed_index = np.where(np.array(edges) == edge_index)[0][0]
+                center_i += embeddings[embed_index]
+                neigh_i_count += 1
+        if neigh_i_count > 0:
+            center_i = center_i / neigh_i_count
+            centers[i] = center_i
 
     # # randomize centers vector by vector, rather than materializing a huge random matrix in RAM at once
     # for i in range(node_count):
