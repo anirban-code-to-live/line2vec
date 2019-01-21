@@ -129,7 +129,8 @@ def seeded_vector(seed_string, vector_size):
     return (once.rand(vector_size) - 0.5) / vector_size
 
 
-def initialize_params(embeddings, nodes, neighbors, edge_map, vector_size):
+def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size):
+    print(edges)
     node_count = len(nodes)
     centers = np.empty((node_count, vector_size), dtype=float)
     for i in range(node_count):
@@ -142,7 +143,8 @@ def initialize_params(embeddings, nodes, neighbors, edge_map, vector_size):
                 edge_index = edge_map[(n_i, neigh_i[ind])]
             else:
                 edge_index = edge_map[(neigh_i[ind], n_i)]
-            center_i += embeddings[edge_index]
+            embed_index = np.where(np.array(edges) == edge_index)[0][0]
+            center_i += embeddings[embed_index]
         center_i = center_i / len(neigh_i)
         centers[i] = center_i
 
@@ -183,13 +185,13 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     # print(model.index2word)
     print('Number of walks : ', len(walks))
 
-    # Initialize params after first iteration of word2vec
-    cur_embeds = model.syn0
-    centers, radii = initialize_params(cur_embeds, nodes, neighbors, edge_map, args.dimensions)
-
     # List containing edge ids, embeddings of edges are stored in this order
     edges = [int(word) for word in model.index2word]
     # print('Model index2word :: ', model.index2word)
+
+    # Initialize params after first iteration of word2vec
+    cur_embeds = model.syn0
+    centers, radii = initialize_params(cur_embeds, nodes, edges, neighbors, edge_map, args.dimensions)
 
     # List containing penalty errors over iterations
     penalty_error_list = []
