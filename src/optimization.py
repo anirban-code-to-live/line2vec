@@ -5,7 +5,7 @@ import numpy as np
 def update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=0.001, eta=0.1):
     edge_count = old_embeddings.shape[0]
     embed_dim = old_embeddings.shape[1]
-    assert edge_count == len(edge_map.keys())
+    # assert edge_count == len(edge_map.keys())  # False in case of isolated edges in the original graph
     assert old_embeddings.shape[0] == new_embeddings.shape[0]
     assert old_embeddings.shape[1] == new_embeddings.shape[1]
     for i in range(edge_count):
