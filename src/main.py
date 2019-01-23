@@ -212,33 +212,51 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     alpha = args.alpha or 100
     beta = args.beta or 0.1
     eta = args.eta or 0.1
-    print('Initial value of hyper-parameters :: beta = %s eta = %s' %(beta, eta))
+    print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s' % (alpha, beta, eta))
 
-    # Start updating optimization variables using projection and collective homophily
+    # Boolean variable to check further update of beta
+    beta_update = True
+
+    # Start updating optimization variables using penalty method and collective homophily
     for i in range(args.l2v_iter):
+        old_centers = centers  # For rolling back in case penalty error increases
+        old_radii = radii  # For rolling back in case penalty error increases
         old_embeddings = model.syn0
         model.train(walks, total_examples=model.corpus_count)
         new_embeddings = model.syn0
+
         penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map,
                                                                           nodes, edges, alpha=alpha, beta=beta, eta=eta)
         model.syn0 = penalty_embeddings
         penalty_error = beta * measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
-        penalty_error_list.append(penalty_error)
-        print('At iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
+
+        # if i>0 and beta_update:
+        #     if penalty_error >= 1.2*penalty_error_list[-1]:
+        #         beta_update = False
+        #         model.syn0 = old_embeddings
+        #         centers = old_centers
+        #         radii = old_radii
+        #         beta /= 2
+        #         print('Penalty Error increases significantly iteration %s, So stopped increasing beta and did the roll back' % (i+1))
+        #         continue
+        #
+        # penalty_error_list.append(penalty_error)
+        
+        print('At iteration = %s, Hyper-parameters eta = %s and beta = %s' % (i+1, eta, beta))
         print('Penalty error after iteration %s :: %s' %(i+1, penalty_error))
         radial_error = alpha * measure_radial_error(radii)
         print('Radial error after iteration %s :: %s' %(i+1, radial_error))
         # print('Word2Vec cost after iteration %s is :: %s' %(i+1, -model.w2v_cost))
         # total_cost = penalty_error + radial_error - model.w2v_cost
         # print('Total cost after iteration %s is %s' %(i+1, total_cost))
-        if penalty_error > 1:
+
+        if beta_update: #penalty_error > 1:
             beta *= 2
         if i>4 and (i+1)% 2 == 0:
             eta /= 2
 
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
-    
     return penalty_error_list
 
 
