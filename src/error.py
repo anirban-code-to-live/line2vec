@@ -17,8 +17,7 @@ def measure_penalty_error(embeddings, centers, radii, edge_map, nodes, edges):
         r_v = radii[n_v_ind][0][0]
         #print type(r_u)
         if np.linalg.norm(X_uv - c_u) > r_u:
-            #print type((np.linalg.norm(X_uv - c_u) ** 2))
-            #print(type(error))
+            # print(np.linalg.norm(X_uv - c_u) ** 2 - r_u ** 2)
             error += np.linalg.norm(X_uv - c_u) ** 2 - r_u ** 2
         if np.linalg.norm(X_uv - c_v) > r_v:
             error += np.linalg.norm(X_uv - c_v) ** 2 - r_v ** 2
