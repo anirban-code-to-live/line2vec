@@ -71,6 +71,15 @@ def parse_args():
     parser.add_argument('--q', type=float, default=1,
                         help='Inout hyperparameter. Default is 1.')
 
+    parser.add_argument('--alpha', type=float, default=100,
+                        help='alpha hyperparameter. Default is 100.')
+
+    parser.add_argument('--beta', type=float, default=0.1,
+                        help='beta hyperparameter. Default is 0.1')
+
+    parser.add_argument('--eta', type=float, default=0.1,
+                        help='eta hyperparameter. Default is 0.1')
+
     parser.add_argument('--weighted', dest='weighted', action='store_true',
                         help='Boolean specifying (un)weighted. Default is unweighted.')
     parser.add_argument('--unweighted', dest='unweighted', action='store_false')
@@ -170,9 +179,9 @@ def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size
     return centers, radius
 
 
-def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=0.01, eta=0.001):
+def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, alpha=100, beta=0.1, eta=0.1):
     penalty_embeddings = update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
-    centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
+    centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta)
     # print("Center shape :: ", centers.shape)
     return penalty_embeddings, centers, radii
 
@@ -200,9 +209,9 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     penalty_error_list = []
 
     # Hyper-parameters
-    beta = 0.1
-    eta = 0.1
-    alpha = 0.3
+    alpha = args.alpha or 100
+    beta = args.beta or 0.1
+    eta = args.eta or 0.1
     print('Initial value of hyper-parameters :: beta = %s eta = %s' %(beta, eta))
 
     # Start updating optimization variables using projection and collective homophily
@@ -211,16 +220,16 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         model.train(walks, total_examples=model.corpus_count)
         new_embeddings = model.syn0
         penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map,
-                                                                          nodes, edges, beta=beta, eta=eta)
+                                                                          nodes, edges, alpha=alpha, beta=beta, eta=eta)
         model.syn0 = penalty_embeddings
-        penalty_error = measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
+        penalty_error = beta * measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
         penalty_error_list.append(penalty_error)
         print('At iteration = {}, Hyper-parameters eta = {} and beta = {}'.format( (i + 1), eta, beta ))
-        print('Penalty error after iteration %s' %(i+1), penalty_error)
-        radial_error = measure_radial_error(radii)
+        print('Penalty error after iteration %s :: %s' %(i+1, penalty_error))
+        radial_error = alpha * measure_radial_error(radii)
         print('Radial error after iteration %s :: %s' %(i+1, radial_error))
         # print('Word2Vec cost after iteration %s is :: %s' %(i+1, -model.w2v_cost))
-        # total_cost = beta*penalty_error + alpha*radial_error - model.w2v_cost
+        # total_cost = penalty_error + radial_error - model.w2v_cost
         # print('Total cost after iteration %s is %s' %(i+1, total_cost))
         if penalty_error > 1:
             beta *= 2

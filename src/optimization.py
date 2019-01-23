@@ -29,7 +29,7 @@ def update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, 
     return new_embeddings
 
 
-def update_sphere(embeddings, centers, radii, edge_map, nodes, edges, alpha=0.3, beta=0.1, eta=0.1):
+def update_sphere(embeddings, centers, radii, edge_map, nodes, edges, alpha=100, beta=0.1, eta=0.1):
     # Update radius and centers using gradients
     node_count = len(nodes)
     edge_count = embeddings.shape[0]
