@@ -1,14 +1,3 @@
-'''
-Reference implementation of node2vec.
-
-Author: Aditya Grover
-
-For more dils, refer to the paper:
-node2vec: Scalable Feature Learning for Networks
-Aditya Grover and Jure Leskovec
-Knowledge Discovery and Data Mining (KDD), 2016
-'''
-
 # import matplotlib
 import argparse
 import os
@@ -79,6 +68,9 @@ def parse_args():
 
     parser.add_argument('--eta', type=float, default=0.1,
                         help='eta hyperparameter. Default is 0.1')
+
+    parser.add_argument('--gamma', type=float, default=100,
+                        help='gamma hyperparameter. Default is 100')
 
     parser.add_argument('--weighted', dest='weighted', action='store_true',
                         help='Boolean specifying (un)weighted. Default is unweighted.')
@@ -179,9 +171,9 @@ def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size
     return centers, radius
 
 
-def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, alpha=100, beta=0.1, eta=0.1):
+def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, alpha=100, beta=0.1, eta=0.1, gamma=100):
     penalty_embeddings = update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
-    centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta)
+    centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta, gamma=gamma)
     # print("Center shape :: ", centers.shape)
     return penalty_embeddings, centers, radii
 
@@ -212,6 +204,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     alpha = args.alpha or 100
     beta = args.beta or 0.1
     eta = args.eta or 0.1
+    gamma = args.gamma or 100
     print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s' % (alpha, beta, eta))
 
     # Boolean variable to check further update of beta
@@ -226,7 +219,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         new_embeddings = model.syn0
 
         penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map,
-                                                                          nodes, edges, alpha=alpha, beta=beta, eta=eta)
+                                                                          nodes, edges, alpha=alpha, beta=beta, eta=eta, gamma=gamma)
         model.syn0 = penalty_embeddings
         penalty_error = beta * measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
 
