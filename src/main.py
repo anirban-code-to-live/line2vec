@@ -205,7 +205,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     beta = args.beta or 0.1
     eta = args.eta or 0.1
     gamma = args.gamma or 100
-    print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s' % (alpha, beta, eta))
+    print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s gamma = %s' % (alpha, beta, eta, gamma))
 
     # Boolean variable to check further update of beta
     beta_update = True
