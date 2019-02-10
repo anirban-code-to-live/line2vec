@@ -171,7 +171,7 @@ def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size
     return centers, radius
 
 
-def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, alpha=100, beta=0.1, eta=0.1, gamma=100):
+def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, alpha=0.1, beta=0.1, eta=0.1, gamma=100):
     penalty_embeddings = update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
     centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta, gamma=gamma)
     # print("Center shape :: ", centers.shape)
@@ -201,7 +201,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     penalty_error_list = []
 
     # Hyper-parameters
-    alpha = args.alpha or 100
+    alpha = args.alpha or 0.1
     beta = args.beta or 0.1
     eta = args.eta or 0.1
     gamma = args.gamma or 100
@@ -399,7 +399,7 @@ def save_line_graph(L, edge_map, line_graph_edge_weight_dict):
                        weight=line_graph_edge_weight)
     # print L_new.edges(data=True)
     # print('Line graph path : ', args.line_graph)
-    nx.write_edgelist(L_new, args.line_graph, data=True)
+    nx.write_edgelist(L_new, args.line_graph, data=['weight'])
 
 
 def main(args):
