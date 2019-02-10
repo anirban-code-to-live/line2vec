@@ -60,13 +60,13 @@ def parse_args():
     parser.add_argument('--q', type=float, default=1,
                         help='Inout hyperparameter. Default is 1.')
 
-    parser.add_argument('--alpha', type=float, default=100,
+    parser.add_argument('--alpha', type=float, default=0.1,
                         help='alpha hyperparameter. Default is 100.')
 
     parser.add_argument('--beta', type=float, default=0.1,
                         help='beta hyperparameter. Default is 0.1')
 
-    parser.add_argument('--eta', type=float, default=0.1,
+    parser.add_argument('--eta', type=float, default=0.01,
                         help='eta hyperparameter. Default is 0.1')
 
     parser.add_argument('--gamma', type=float, default=100,
