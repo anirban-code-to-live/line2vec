@@ -32,3 +32,11 @@ def measure_radial_error(radii):
         radius = radii[i][0]
         error += radius**2
     return error
+
+def total_negative_radial_error(radii):
+    error = 0.
+    node_count = radii.shape[0]
+    for i in range(node_count):
+        radius = radii[i][0]
+        error += min(0,radius)
+    return error
