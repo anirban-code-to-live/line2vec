@@ -172,7 +172,7 @@ def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size
     return centers, radius
 
 
-def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, alpha=0.1, beta=0.1, eta=0.1, gamma=[100]):
+def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, gamma, alpha=0.1, beta=0.1, eta=0.1):
     penalty_embeddings = update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
     centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta, gamma=gamma)
     # print("Center shape :: ", centers.shape)
@@ -200,15 +200,15 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # List containing penalty errors over iterations
     penalty_error_list = []
-    totalNegative_error_list = []
+    total_negative_error_list = []
     radial_error_list = []
 
     # Hyper-parameters
     alpha = args.alpha or 2.5 #0.1
     beta = args.beta or 0.1
     eta = args.eta or 0.1
-    gammaScalar = args.gamma or 100
-    gamma = [gammaScalar]*len(radii)
+    gamma_scalar = args.gamma or 100
+    gamma = [gamma_scalar]*len(radii)
     print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s gamma = %s' % (alpha, beta, eta, gammaScalar))
 
     # Boolean variable to check further update of beta
@@ -216,20 +216,20 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # Start updating optimization variables using penalty method and collective homophily
     for i in range(args.l2v_iter):
-        print('Iteration number {}'.format(i))
+        print('Iteration number %s' % i)
         old_centers = centers  # For rolling back in case penalty error increases
         old_radii = radii  # For rolling back in case penalty error increases
         old_embeddings = model.syn0
         model.train(walks, total_examples=model.corpus_count)
         new_embeddings = model.syn0
 
-        penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta, gamma=gamma)
+        penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map, nodes, edges, gamma, alpha=alpha, beta=beta, eta=eta)
         model.syn0 = penalty_embeddings
         
         #penalty_error = beta * measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
         penalty_error = measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
         
-        totalNegative_error = total_negative_radial_error(radii)
+        total_negative_error = total_negative_radial_error(radii)
 
         if i>10 and beta_update:
             if penalty_error >= 1.2*penalty_error_list[-1]:
@@ -245,8 +245,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         for j in range(len(radii)):
             if radii[j] < 0:
                 gamma[j] *= 1.2
-                
-        totalNegative_error_list.append(totalNegative_error)
+        total_negative_error_list.append(total_negative_error)
         
         print('At iteration = %s, Hyper-parameters eta = %s and beta = %s' % (i+1, eta, beta))
         print('Penalty error after iteration %s :: %s' %(i+1, penalty_error))
@@ -256,9 +255,9 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         radial_error_list.append(radial_error)
         
         print('Radial error after iteration %s :: %s' %(i+1, radial_error))
-        print('Negative radii error after iteration {} is {}'.format(i+1,totalNegative_error))
+        print('Negative radii error after iteration %s is %s' % (i+1,total_negative_error))
         # print('Word2Vec cost after iteration %s is :: %s' %(i+1, -model.w2v_cost))
-        # total_cost = penalty_error + radial_error - model.w2v_cost
+        # total_cost = beta * penalty_error + alpha * radial_error - model.w2v_cost
         # print('Total cost after iteration %s is %s' %(i+1, total_cost))
 
         if beta_update: #penalty_error > 1:
@@ -268,7 +267,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
-    return penalty_error_list, totalNegative_error_list, radial_error_list
+    return penalty_error_list, total_negative_error_list, radial_error_list
 
 
 def modify_edge_weights(G, epsilon=0.00001):
