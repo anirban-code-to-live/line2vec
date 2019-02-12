@@ -428,7 +428,7 @@ def plot_error(penalty_error_list, total_negative_error_list, radial_error_list)
         plt.xlabel('Iterations')
         save_path = '../embed/{}/{}_PenError.png'.format(args.dataset, args.dataset)
         plt.savefig(save_path)
-        plt.show()
+        # plt.show()
 
         plt.figure()
         plt.plot(range(1, len(total_negative_error_list) + 1), total_negative_error_list)
@@ -436,7 +436,7 @@ def plot_error(penalty_error_list, total_negative_error_list, radial_error_list)
         plt.xlabel('Iterations')
         save_path = '../embed/{}/{}_NegRadiiError.png'.format(args.dataset, args.dataset)
         plt.savefig(save_path)
-        plt.show()
+        # plt.show()
 
         plt.figure()
         plt.plot(range(1, len(radial_error_list) + 1), radial_error_list)
@@ -444,7 +444,7 @@ def plot_error(penalty_error_list, total_negative_error_list, radial_error_list)
         plt.xlabel('Iterations')
         save_path = '../embed/{}/{}_RadiiSqCost.png'.format(args.dataset, args.dataset)
         plt.savefig(save_path)
-        plt.show()
+        # plt.show()
 
 
 def main(args):
