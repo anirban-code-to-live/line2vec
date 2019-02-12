@@ -209,7 +209,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     eta = args.eta or 0.1
     gamma_scalar = args.gamma or 100
     gamma = [gamma_scalar]*len(radii)
-    print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s gamma = %s' % (alpha, beta, eta, gammaScalar))
+    print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s gamma = %s' % (alpha, beta, eta, gamma_scalar))
 
     # Boolean variable to check further update of beta
     beta_update = True
@@ -419,6 +419,34 @@ def save_line_graph(L, edge_map, line_graph_edge_weight_dict):
     nx.write_edgelist(L_new, args.line_graph, data=['weight'])
 
 
+def plot_error(penalty_error_list, total_negative_error_list, radial_error_list):
+    do_plot = True
+    if do_plot:
+        plt.figure()
+        plt.plot(range(1, len(penalty_error_list) + 1), penalty_error_list)
+        plt.ylabel('Constraint Penalty Error')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_PenError.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
+        plt.show()
+
+        plt.figure()
+        plt.plot(range(1, len(total_negative_error_list) + 1), total_negative_error_list)
+        plt.ylabel('Total Negative Radii Error')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_NegRadiiError.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
+        plt.show()
+
+        plt.figure()
+        plt.plot(range(1, len(radial_error_list) + 1), radial_error_list)
+        plt.ylabel('Radius Square Cost')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_RadiiSqCost.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
+        plt.show()
+
+
 def main(args):
     '''
     Pipeline for representational learning for all nodes in a graph.
@@ -457,33 +485,8 @@ def main(args):
         neighbors[node] = neigh_n
 
     # Learn embeddings
-    penalty_error_list, totalNegative_error_list, radial_error_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
-    
-    doPlot = True
-    if doPlot:
-        plt.figure()
-        plt.plot(range(1,len(penalty_error_list)+1), penalty_error_list)
-        plt.ylabel('Constraint Penalty Error')
-        plt.xlabel('Iterations')
-        savePath = '../embed/{}/{}_PenError.jpg'.format(args.dataset,args.dataset)
-        plt.savefig(savePath)
-        plt.show()
-
-        plt.figure()
-        plt.plot(range(1,len(totalNegative_error_list)+1), totalNegative_error_list)
-        plt.ylabel('Total Negative Radii Error')
-        plt.xlabel('Iterations')
-        savePath = '../embed/{}/{}_NegRadiiError.jpg'.format(args.dataset,args.dataset)
-        plt.savefig(savePath)
-        plt.show()
-
-        plt.figure()
-        plt.plot(range(1,len(radial_error_list)+1), radial_error_list)
-        plt.ylabel('Radius Square Cost')
-        plt.xlabel('Iterations')
-        savePath = '../embed/{}/{}_RadiiSqCost.jpg'.format(args.dataset,args.dataset)
-        plt.savefig(savePath)
-        plt.show()
+    penalty_error_list, total_negative_error_list, radial_error_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
+    plot_error(penalty_error_list, total_negative_error_list, radial_error_list)
 
 
 if __name__ == "__main__":
