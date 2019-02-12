@@ -419,7 +419,7 @@ def main(args):
 
         line_graph_edge_weight_dict = build_weighted_line_graph(nx_G, nx_L)
         edge_map, reverse_edge_map = map_edge_to_unique_index(nx_G)
-        print(edge_map)
+        # print(edge_map)
         save_line_graph(nx_L, edge_map, line_graph_edge_weight_dict)
 
     else:
