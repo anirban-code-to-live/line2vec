@@ -202,6 +202,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     penalty_error_list = []
     total_negative_error_list = []
     radial_error_list = []
+    total_cost_list = []
 
     # Hyper-parameters
     alpha = args.alpha or 2.5 #0.1
@@ -258,6 +259,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         print('Negative radii error after iteration %s is %s' % (i+1,total_negative_error))
         # print('Word2Vec cost after iteration %s is :: %s' %(i+1, -model.w2v_cost))
         # total_cost = beta * penalty_error + alpha * radial_error - model.w2v_cost
+        # total_cost_list.append(total_cost)
         # print('Total cost after iteration %s is %s' %(i+1, total_cost))
 
         if beta_update: #penalty_error > 1:
@@ -267,7 +269,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
-    return penalty_error_list, total_negative_error_list, radial_error_list
+    return penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list
 
 
 def modify_edge_weights(G, epsilon=0.00001):
@@ -419,7 +421,7 @@ def save_line_graph(L, edge_map, line_graph_edge_weight_dict):
     nx.write_edgelist(L_new, args.line_graph, data=['weight'])
 
 
-def plot_error(penalty_error_list, total_negative_error_list, radial_error_list):
+def plot_error(penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list):
     do_plot = True
     if do_plot:
         plt.figure()
@@ -445,6 +447,15 @@ def plot_error(penalty_error_list, total_negative_error_list, radial_error_list)
         save_path = '../embed/{}/{}_RadiiSqCost.png'.format(args.dataset, args.dataset)
         plt.savefig(save_path)
         # plt.show()
+
+    do_total_cost_plot = False
+    if do_total_cost_plot:
+        plt.figure()
+        plt.plot(range(1, len(total_cost_list) + 1), total_cost_list)
+        plt.ylabel('Total Cost')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_total_cost.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
 
 
 def main(args):
@@ -485,8 +496,8 @@ def main(args):
         neighbors[node] = neigh_n
 
     # Learn embeddings
-    penalty_error_list, total_negative_error_list, radial_error_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
-    plot_error(penalty_error_list, total_negative_error_list, radial_error_list)
+    penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
+    plot_error(penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list)
 
 
 if __name__ == "__main__":
