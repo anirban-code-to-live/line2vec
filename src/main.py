@@ -217,7 +217,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # Start updating optimization variables using penalty method and collective homophily
     for i in range(args.l2v_iter):
-        print('Iteration number %s' % i)
+        print('Iteration number %s' % (i+1))
         old_centers = centers  # For rolling back in case penalty error increases
         old_radii = radii  # For rolling back in case penalty error increases
         old_embeddings = model.syn0
