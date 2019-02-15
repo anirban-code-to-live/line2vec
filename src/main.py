@@ -205,10 +205,10 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     total_cost_list = []
 
     # Hyper-parameters
-    alpha = args.alpha or 2.5 #0.1
-    beta = args.beta or 0.1
-    eta = args.eta or 0.1
-    gamma_scalar = args.gamma or 100
+    alpha = args.alpha
+    beta = args.beta
+    eta = args.eta
+    gamma_scalar = args.gamma
     gamma = [gamma_scalar]*len(radii)
     print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s gamma = %s' % (alpha, beta, eta, gamma_scalar))
 
@@ -285,7 +285,8 @@ def modify_edge_weights(G, epsilon=0.00001):
         start_vertex_degree = degree_dict[start_vertex]
         end_vertex_degree = degree_dict[end_vertex]
         edge_weight = max(np.log(float(total_degree) / (start_vertex_degree * end_vertex_degree)) + epsilon, epsilon)
-        edge_weight_dict[sorted_edge] = edge_weight
+        # edge_weight_dict[sorted_edge] = edge_weight
+        edge_weight_dict[sorted_edge] = 1.0
     # print(edge_weight_dict)
     return edge_weight_dict
 
