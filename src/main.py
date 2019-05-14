@@ -13,7 +13,7 @@ from optimization import update_sphere
 from error import measure_penalty_error
 from error import measure_radial_error
 from error import total_negative_radial_error
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def parse_args():
@@ -204,6 +204,10 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
     radial_error_list = []
     total_cost_list = []
 
+    # List containing centers and radii at the end of optimization iterations
+    radii_list = None
+    centers_list = None
+
     # Hyper-parameters
     alpha = args.alpha
     beta = args.beta
@@ -262,10 +266,19 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         # total_cost_list.append(total_cost)
         # print('Total cost after iteration %s is %s' %(i+1, total_cost))
 
+        if i == args.l2v_iter - 1:
+            radii_list = radii
+            centers_list = centers
+
         if beta_update: #penalty_error > 1:
             beta *= 2
         if i>4 and (i+1)% 2 == 0:
             eta /= 2
+
+    # print(radii_list)
+    radii_fname = '../data/' + args.dataset + '/' + args.dataset + '_radii.pkl'
+    with open(radii_fname, 'wb') as f:
+        pickle.dump(radii_list, f, pickle.HIGHEST_PROTOCOL)
 
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
@@ -498,7 +511,7 @@ def main(args):
 
     # Learn embeddings
     penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
-    plot_error(penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list)
+    # plot_error(penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list)
 
 
 if __name__ == "__main__":
