@@ -38,4 +38,11 @@ The next *n* lines are as follows:
 	
 	edge_id dim1 dim2 ... dimd
 
-where dim1, ... , dimd is the *d*-dimensional representation learned by *line2vec*.
+where dim1, ... , dimd is the *d*-dimensional representation learned by *line2vec*.\
+
+
+#### Command for outlier
+####### Remove this part later
+Run the following command to generate outlier-synthetic_radii.pkl file in outlier-synthetic data folder. Copy the entire outlier-synthetic directory and place it into data directory of network-tasks repo.
+
+``python main.py --input ../data/outlier-synthetic/outlier-synthetic.edgelist --dataset outlier-synthetic --output ../embed/outlier-synthetic/outlier-synthetic.embed --dimensions=8 --line-graph ../data/outlier-synthetic/outlier-synthetic_line.edgelist --l2v-iter=20 --iter=1 --weighted --scratch --walk-length=10 --window-size=5``
