@@ -13,7 +13,7 @@ from optimization import update_sphere
 from error import measure_penalty_error
 from error import measure_radial_error
 from error import total_negative_radial_error
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def parse_args():
@@ -172,7 +172,7 @@ def initialize_params(embeddings, nodes, edges, neighbors, edge_map, vector_size
     return centers, radius
 
 
-def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, alpha=0.1, beta=0.1, eta=0.1, gamma=[100]):
+def update_optimization_params(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, gamma, alpha=0.1, beta=0.1, eta=0.1):
     penalty_embeddings = update_embeddings(old_embeddings, new_embeddings, centers, radii, edge_map, nodes, edges, beta=beta, eta=eta)
     centers, radii = update_sphere(penalty_embeddings, centers, radii, edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta, gamma=gamma)
     # print("Center shape :: ", centers.shape)
@@ -200,36 +200,41 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
 
     # List containing penalty errors over iterations
     penalty_error_list = []
-    totalNegative_error_list = []
+    total_negative_error_list = []
     radial_error_list = []
+    total_cost_list = []
+
+    # List containing centers and radii at the end of optimization iterations
+    radii_list = None
+    centers_list = None
 
     # Hyper-parameters
-    alpha = args.alpha or 2.5 #0.1
-    beta = args.beta or 0.1
-    eta = args.eta or 0.1
-    gammaScalar = args.gamma or 100
-    gamma = [gammaScalar]*len(radii)
-    print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s gamma = %s' % (alpha, beta, eta, gammaScalar))
+    alpha = args.alpha
+    beta = args.beta
+    eta = args.eta
+    gamma_scalar = args.gamma
+    gamma = [gamma_scalar]*len(radii)
+    print('Initial value of hyper-parameters :: alpha = %s beta = %s eta = %s gamma = %s' % (alpha, beta, eta, gamma_scalar))
 
     # Boolean variable to check further update of beta
     beta_update = True
 
     # Start updating optimization variables using penalty method and collective homophily
     for i in range(args.l2v_iter):
-        print('Iteration number {}'.format(i))
+        print('Iteration number %s' % (i+1))
         old_centers = centers  # For rolling back in case penalty error increases
         old_radii = radii  # For rolling back in case penalty error increases
         old_embeddings = model.syn0
         model.train(walks, total_examples=model.corpus_count)
         new_embeddings = model.syn0
 
-        penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map, nodes, edges, alpha=alpha, beta=beta, eta=eta, gamma=gamma)
+        penalty_embeddings, centers, radii = update_optimization_params(old_embeddings, new_embeddings, centers, radii, reverse_edge_map, nodes, edges, gamma, alpha=alpha, beta=beta, eta=eta)
         model.syn0 = penalty_embeddings
         
         #penalty_error = beta * measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
         penalty_error = measure_penalty_error(penalty_embeddings, centers, radii, reverse_edge_map, nodes, edges)
         
-        totalNegative_error = total_negative_radial_error(radii)
+        total_negative_error = total_negative_radial_error(radii)
 
         if i>10 and beta_update:
             if penalty_error >= 1.2*penalty_error_list[-1]:
@@ -245,8 +250,7 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         for j in range(len(radii)):
             if radii[j] < 0:
                 gamma[j] *= 1.2
-                
-        totalNegative_error_list.append(totalNegative_error)
+        total_negative_error_list.append(total_negative_error)
         
         print('At iteration = %s, Hyper-parameters eta = %s and beta = %s' % (i+1, eta, beta))
         print('Penalty error after iteration %s :: %s' %(i+1, penalty_error))
@@ -256,19 +260,29 @@ def learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors):
         radial_error_list.append(radial_error)
         
         print('Radial error after iteration %s :: %s' %(i+1, radial_error))
-        print('Negative radii error after iteration {} is {}'.format(i+1,totalNegative_error))
+        print('Negative radii error after iteration %s is %s' % (i+1,total_negative_error))
         # print('Word2Vec cost after iteration %s is :: %s' %(i+1, -model.w2v_cost))
-        # total_cost = penalty_error + radial_error - model.w2v_cost
+        # total_cost = beta * penalty_error + alpha * radial_error - model.w2v_cost
+        # total_cost_list.append(total_cost)
         # print('Total cost after iteration %s is %s' %(i+1, total_cost))
+
+        if i == args.l2v_iter - 1:
+            radii_list = radii
+            centers_list = centers
 
         if beta_update: #penalty_error > 1:
             beta *= 2
         if i>4 and (i+1)% 2 == 0:
             eta /= 2
 
+    # print(radii_list)
+    radii_fname = '../data/' + args.dataset + '/' + args.dataset + '_radii.pkl'
+    with open(radii_fname, 'wb') as f:
+        pickle.dump(radii_list, f, pickle.HIGHEST_PROTOCOL)
+
     # print('Final embeds :: ', model.syn0)
     model.save_word2vec_format(args.output)
-    return penalty_error_list, totalNegative_error_list, radial_error_list
+    return penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list
 
 
 def modify_edge_weights(G, epsilon=0.00001):
@@ -284,7 +298,8 @@ def modify_edge_weights(G, epsilon=0.00001):
         start_vertex_degree = degree_dict[start_vertex]
         end_vertex_degree = degree_dict[end_vertex]
         edge_weight = max(np.log(float(total_degree) / (start_vertex_degree * end_vertex_degree)) + epsilon, epsilon)
-        edge_weight_dict[sorted_edge] = edge_weight
+        # edge_weight_dict[sorted_edge] = edge_weight
+        edge_weight_dict[sorted_edge] = 1.0
     # print(edge_weight_dict)
     return edge_weight_dict
 
@@ -420,6 +435,43 @@ def save_line_graph(L, edge_map, line_graph_edge_weight_dict):
     nx.write_edgelist(L_new, args.line_graph, data=['weight'])
 
 
+def plot_error(penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list):
+    do_plot = True
+    if do_plot:
+        plt.figure()
+        plt.plot(range(1, len(penalty_error_list) + 1), penalty_error_list)
+        plt.ylabel('Constraint Penalty Error')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_PenError.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
+        # plt.show()
+
+        plt.figure()
+        plt.plot(range(1, len(total_negative_error_list) + 1), total_negative_error_list)
+        plt.ylabel('Total Negative Radii Error')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_NegRadiiError.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
+        # plt.show()
+
+        plt.figure()
+        plt.plot(range(1, len(radial_error_list) + 1), radial_error_list)
+        plt.ylabel('Radius Square Cost')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_RadiiSqCost.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
+        # plt.show()
+
+    do_total_cost_plot = False
+    if do_total_cost_plot:
+        plt.figure()
+        plt.plot(range(1, len(total_cost_list) + 1), total_cost_list)
+        plt.ylabel('Total Cost')
+        plt.xlabel('Iterations')
+        save_path = '../embed/{}/{}_total_cost.png'.format(args.dataset, args.dataset)
+        plt.savefig(save_path)
+
+
 def main(args):
     '''
     Pipeline for representational learning for all nodes in a graph.
@@ -437,7 +489,7 @@ def main(args):
 
         line_graph_edge_weight_dict = build_weighted_line_graph(nx_G, nx_L)
         edge_map, reverse_edge_map = map_edge_to_unique_index(nx_G)
-        print(edge_map)
+        # print(edge_map)
         save_line_graph(nx_L, edge_map, line_graph_edge_weight_dict)
 
     else:
@@ -458,33 +510,8 @@ def main(args):
         neighbors[node] = neigh_n
 
     # Learn embeddings
-    penalty_error_list, totalNegative_error_list, radial_error_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
-    
-    doPlot = True
-    if doPlot:
-        plt.figure()
-        plt.plot(range(1,len(penalty_error_list)+1), penalty_error_list)
-        plt.ylabel('Constraint Penalty Error')
-        plt.xlabel('Iterations')
-        savePath = '../embed/{}/{}_PenError.jpg'.format(args.dataset,args.dataset)
-        plt.savefig(savePath)
-        plt.show()
-
-        plt.figure()
-        plt.plot(range(1,len(totalNegative_error_list)+1), totalNegative_error_list)
-        plt.ylabel('Total Negative Radii Error')
-        plt.xlabel('Iterations')
-        savePath = '../embed/{}/{}_NegRadiiError.jpg'.format(args.dataset,args.dataset)
-        plt.savefig(savePath)
-        plt.show()
-
-        plt.figure()
-        plt.plot(range(1,len(radial_error_list)+1), radial_error_list)
-        plt.ylabel('Radius Square Cost')
-        plt.xlabel('Iterations')
-        savePath = '../embed/{}/{}_RadiiSqCost.jpg'.format(args.dataset,args.dataset)
-        plt.savefig(savePath)
-        plt.show()
+    penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list = learn_embeddings(walks, edge_map, reverse_edge_map, nodes, neighbors)
+    # plot_error(penalty_error_list, total_negative_error_list, radial_error_list, total_cost_list)
 
 
 if __name__ == "__main__":
