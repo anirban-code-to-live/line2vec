@@ -114,7 +114,7 @@ def read_line_graph():
     if args.weighted:
         L = nx.read_edgelist(args.line_graph, nodetype=int, data=(('weight', float),), create_using=nx.DiGraph())
     else:
-        L = nx.read_edgelist(args.line_graph, nodetype=int, create_using=nx.DiGraph())
+        L = nx.read_edgelist(args.line_graph, nodetype=int, data=False, create_using=nx.DiGraph())
         for edge in L.edges():
             L[edge[0]][edge[1]]['weight'] = 1
 
