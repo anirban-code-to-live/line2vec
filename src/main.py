@@ -84,7 +84,7 @@ def parse_args():
     parser.set_defaults(directed=False)
 
     parser.add_argument('--scratch', dest='scratch', action='store_true',
-                        help='Boolean specifying if code run starts from line graph creation process')
+                        help='Boolean specifying first time run. It includes line graph creation process.')
     parser.set_defaults(scratch=False)
 
     return parser.parse_args()
