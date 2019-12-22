@@ -109,3 +109,6 @@ venv.bak/
 
 # Data directory
 data/
+
+# Embedding directory
+embed/
